@@ -19,6 +19,26 @@ data class Graph(val vertexCount: Int, val edges: Set<Edge>) {
     }
 }
 
+fun generateRandomBinaryTree(maxVertices: Int): Graph {
+    val vertexCount = maxVertices
+    val edges = mutableSetOf<Edge>()
+    val childCount = IntArray(vertexCount)
+
+    val available = ArrayDeque<Int>()
+    available.add(0) // root
+
+    for (v in 1 until vertexCount) {
+        val parentIdx = Random.nextInt(available.size)
+        val parent = available[parentIdx]
+        edges.add(Edge(parent, v))
+        childCount[parent]++
+        if (childCount[parent] >= 2) available.removeAt(parentIdx)
+        available.add(v)
+    }
+
+    return Graph(vertexCount, edges)
+}
+
 /**
  * Algorithm
  * - Generate [2, max] vertices
@@ -31,10 +51,11 @@ data class Graph(val vertexCount: Int, val edges: Set<Edge>) {
  * - Probability of algo termination is (1 - 2f/V^2)^(2V^2)
  *     - lim(1 + x/n)^2 ~ e^x
  *     - e^(-4f)
- * - In half of the cases, algo will terminate around f ~ 0.17
+ * - In half of the cases, algo will terminate around f ~ 0.17.
+ * Ughm, probably overthought it
  */
 fun generateRandomGraph(maxVertices: Int, maxDegree: Int): Graph {
-    val vertexCount = Random.nextInt(2, maxVertices + 1)
+    val vertexCount = maxVertices
     val edges = mutableSetOf<Edge>()
     val degrees = IntArray(vertexCount)
 
