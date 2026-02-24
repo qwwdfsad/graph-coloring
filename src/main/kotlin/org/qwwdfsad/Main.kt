@@ -1,12 +1,15 @@
 package org.qwwdfsad
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -36,7 +39,7 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "Graph Coloring",
-        state = rememberWindowState(width = 900.dp, height = 700.dp)
+        state = rememberWindowState(width = 1200.dp, height = 900.dp)
     ) {
         MaterialTheme {
             var maxVerticesText by remember { mutableStateOf("10") }
@@ -45,6 +48,24 @@ fun main() = application {
             var graph by remember { mutableStateOf<Graph?>(null) }
             var canvasSize by remember { mutableStateOf(IntSize.Zero) }
             var layoutState by remember { mutableStateOf<LayoutState?>(null) }
+            var running by remember { mutableStateOf(false) }
+
+            LaunchedEffect(running) {
+                if (!running) return@LaunchedEffect
+                while (true) {
+                    delay(200L)
+                    val g = graph ?: break
+                    val state = layoutState ?: break
+                    val steps = stepsText.toIntOrNull()?.takeIf { it > 0 } ?: break
+                    val w = canvasSize.width.toFloat()
+                    val h = canvasSize.height.toFloat()
+                    if (w <= 0 || h <= 0) break
+                    val newState = GraphLayout.layoutIncrementally(state.positions, state.temperature, steps, g, w, h)
+                    layoutState = newState
+                    if (newState.temperature < 0.5f) break
+                }
+                running = false
+            }
 
             // Initialize positions if canvasSize wasn't ready when graph was generated
             LaunchedEffect(canvasSize) {
@@ -56,36 +77,41 @@ fun main() = application {
                 layoutState = GraphLayout.layoutIncrementally(null, GraphLayout.initialTemperature(w, h), 0, g, w, h)
             }
 
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            val textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp)
+
+            Column(modifier = Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Row 1: graph generation controls
                 Row(
+                    modifier = Modifier.height(IntrinsicSize.Min),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedTextField(
                         value = maxVerticesText,
-                        onValueChange = { newValue ->
-                            if (newValue.all { it.isDigit() }) maxVerticesText = newValue
-                        },
-                        label = { Text("Max Vertices") },
-                        modifier = Modifier.width(140.dp),
+                        onValueChange = { if (it.all(Char::isDigit)) maxVerticesText = it },
+                        label = { Text("Max Vertices", fontSize = 12.sp) },
+                        textStyle = textStyle,
+                        modifier = Modifier.width(120.dp),
                         singleLine = true
                     )
 
-                    OutlinedTextField(
-                        value = maxDegreeText,
-                        onValueChange = { newValue ->
-                            if (newValue.all { it.isDigit() }) maxDegreeText = newValue
-                        },
-                        label = { Text("Max Degree") },
-                        modifier = Modifier.width(140.dp),
-                        singleLine = true
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        OutlinedTextField(
+                            value = maxDegreeText,
+                            onValueChange = { if (it.all(Char::isDigit)) maxDegreeText = it },
+                            label = { Text("Max Degree (graph)", fontSize = 12.sp) },
+                            textStyle = textStyle,
+                            modifier = Modifier.width(110.dp),
+                            singleLine = true
+                        )
+                    }
 
                     Button(
                         onClick = {
                             val maxV = maxVerticesText.toIntOrNull() ?: return@Button
                             val maxD = maxDegreeText.toIntOrNull() ?: return@Button
                             if (maxV >= 2 && maxD >= 1) {
+                                running = false
                                 val newGraph = generateRandomGraph(maxV, maxD)
                                 graph = newGraph
                                 val w = canvasSize.width.toFloat()
@@ -94,15 +120,16 @@ fun main() = application {
                                     GraphLayout.layoutIncrementally(null, GraphLayout.initialTemperature(w, h), 0, newGraph, w, h)
                                 } else null
                             }
-                        }
-                    ) {
-                        Text("Generate Next")
-                    }
+                        },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier.align(Alignment.CenterVertically)
+                    ) { Text("Generate graph", fontSize = 13.sp) }
 
                     Button(
                         onClick = {
                             val maxV = maxVerticesText.toIntOrNull() ?: return@Button
                             if (maxV >= 2) {
+                                running = false
                                 val newGraph = generateRandomBinaryTree(maxV)
                                 graph = newGraph
                                 val w = canvasSize.width.toFloat()
@@ -111,21 +138,26 @@ fun main() = application {
                                     GraphLayout.layoutIncrementally(null, GraphLayout.initialTemperature(w, h), 0, newGraph, w, h)
                                 } else null
                             }
-                        }
-                    ) {
-                        Text("Random Tree")
-                    }
+                        },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier.align(Alignment.CenterVertically)
+                    ) { Text("Generate tree", fontSize = 13.sp) }
+                }
 
+                // Row 2: layout controls
+                Row(
+                    modifier = Modifier.height(IntrinsicSize.Min),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     OutlinedTextField(
                         value = stepsText,
-                        onValueChange = { newValue ->
-                            if (newValue.all { it.isDigit() }) stepsText = newValue
-                        },
-                        label = { Text("Steps") },
-                        modifier = Modifier.width(100.dp),
+                        onValueChange = { if (it.all(Char::isDigit)) stepsText = it },
+                        label = { Text("Steps", fontSize = 12.sp) },
+                        textStyle = textStyle,
+                        modifier = Modifier.width(90.dp),
                         singleLine = true
                     )
-
                     Button(
                         onClick = {
                             val g = graph ?: return@Button
@@ -138,17 +170,23 @@ fun main() = application {
                                     state.positions, state.temperature, steps, g, w, h
                                 )
                             }
-                        }
-                    ) {
-                        Text("Next")
-                    }
-                }
+                        },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier.align(Alignment.CenterVertically)
+                    ) { Text("Next", fontSize = 13.sp) }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = { running = !running },
+                        enabled = graph != null,
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier.align(Alignment.CenterVertically)
+                    ) { Text(if (running) "Stop" else "Layout", fontSize = 13.sp) }
+                }
 
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
+                        .border(1.dp, Color.LightGray)
                         .onSizeChanged { canvasSize = it },
                     contentAlignment = Alignment.Center
                 ) {
