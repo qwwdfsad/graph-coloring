@@ -71,10 +71,17 @@ private fun GraphColoringApp() {
             val steps = stepsText.toIntOrNull()?.takeIf { it > 0 } ?: break
             val w = canvasSize.width.toFloat()
             val h = canvasSize.height.toFloat()
-            if (w <= 0 || h <= 0) break
             val newState = GraphLayout.layoutIncrementally(state.positions, state.temperature, steps, g, w, h)
             layoutState = newState
-            if (newState.temperature < 0.5f) break
+            if (newState.temperature < 0.5f) {
+                layoutState = layoutState?.copy(
+                    temperature = GraphLayout.initialTemperature(
+                        canvasSize.width.toFloat(),
+                        canvasSize.height.toFloat()
+                    )
+                )
+                break
+            }
         }
         running = false
     }
@@ -113,7 +120,7 @@ private fun GraphColoringApp() {
                 graph = newGraph
                 val w = canvasSize.width.toFloat()
                 val h = canvasSize.height.toFloat()
-                layoutState = if (w > 0 && h > 0) GraphLayout.layoutTree(newGraph, w, h) else null
+                layoutState = if (w > 0 && h > 0) GraphLayout.layoutIncrementally(null, GraphLayout.initialTemperature(w, h), 0, newGraph, w, h) else null
             }
         )
 
@@ -156,7 +163,8 @@ private fun GraphColoringApp() {
                     first == v -> selectedVertex = null
                     else -> {
                         val g = graph!!
-                        val u = minOf(first, v); val w = maxOf(first, v)
+                        val u = minOf(first, v)
+                        val w = maxOf(first, v)
                         graph = g.copy(edges = g.edges + Edge(u, w))
                         selectedVertex = null
                     }
@@ -323,8 +331,10 @@ private fun GraphCanvasBox(
                 for (i in 0 until graph.vertexCount) {
                     val pos = positions[i]
                     if (i == selectedVertex) {
-                        drawCircle(color = Color.White, radius = radius + 5f,
-                            center = Offset(pos.x, pos.y), style = Stroke(width = 3f))
+                        drawCircle(
+                            color = Color.White, radius = radius + 5f,
+                            center = Offset(pos.x, pos.y), style = Stroke(width = 3f)
+                        )
                     }
                     drawCircle(
                         color = vertexColors[i % vertexColors.size],

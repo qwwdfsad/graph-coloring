@@ -17,6 +17,10 @@ data class Graph(val vertexCount: Int, val edges: Set<Edge>) {
         }
         map
     }
+
+    // 0..1
+    // TODO: figure what to do with star topologies
+    fun density() = (edges.size.toDouble() / (vertexCount * (vertexCount - 1) / 2)).toFloat()
 }
 
 fun generateRandomBinaryTree(maxVertices: Int): Graph {

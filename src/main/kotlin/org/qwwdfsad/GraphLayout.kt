@@ -56,7 +56,7 @@ object GraphLayout {
         val posX = previousPositions?.map { it.x }?.toFloatArray() ?: FloatArray(n) { padding + random.nextFloat() * w }
         val posY = previousPositions?.map { it.y }?.toFloatArray() ?: FloatArray(n) { padding + random.nextFloat() * h }
 
-        val k = sqrt(area / n.toFloat())
+        val k = sqrt(area / n.toFloat()) * graph.density()
         var t = temperature
 
         val dispX = FloatArray(n)
