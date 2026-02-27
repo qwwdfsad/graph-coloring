@@ -37,6 +37,8 @@ data class LayoutState(val positions: List<VertexPosition>, val temperature: Flo
  */
 object GraphLayout {
 
+    private val gravity = 0.2f
+
     fun initialTemperature(width: Float, height: Float): Float = min(width - 80f, height - 80f) / 2f
 
     fun layoutIncrementally(
@@ -93,6 +95,17 @@ object GraphLayout {
                 dispX[edge.v] += fx
                 dispY[edge.v] += fy
             }
+
+            for (i in 0 until n) {
+                val cX = width / 2f
+                val cY = height / 2f
+                val dist = sqrt(dispX[i] * dispX[i] + dispY[i] * dispY[i])
+                val fx = (cX - posX[i]) * gravity
+                val fy = (cY - posY[i]) * gravity
+                dispX[i] += fx
+                dispY[i] += fy
+            }
+
             // Temperature-based clamping
             for (i in 0 until n) {
                 val dist = max(sqrt(dispX[i] * dispX[i] + dispY[i] * dispY[i]), 0.01f)
