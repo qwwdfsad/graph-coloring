@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "2.3.0"
     id("org.jetbrains.kotlin.plugin.compose") version "2.3.0"
     id("org.jetbrains.compose") version "1.10.1"
+    id("org.jetbrains.compose.hot-reload") version "1.0.0"
 }
 
 group = "org.qwwdfsad"
