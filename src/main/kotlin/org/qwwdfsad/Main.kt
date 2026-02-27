@@ -176,7 +176,16 @@ fun main() = application {
                     ) { Text("Next", fontSize = 13.sp) }
 
                     Button(
-                        onClick = { running = !running },
+                        onClick = {
+                            if (!running) {
+                                val w = canvasSize.width.toFloat()
+                                val h = canvasSize.height.toFloat()
+                                if (w > 0 && h > 0) {
+                                    layoutState = layoutState?.copy(temperature = GraphLayout.initialTemperature(w, h))
+                                }
+                            }
+                            running = !running
+                        },
                         enabled = graph != null,
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
                         modifier = Modifier.align(Alignment.CenterVertically)
